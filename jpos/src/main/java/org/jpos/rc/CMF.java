@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2018 jPOS Software SRL
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -109,6 +109,18 @@ public enum CMF implements IRC {
     DRIVER_NUMBER_INVALID(1069),
     VID_INVALID(1070),
     CERTIFICATE_EXPIRED(1071),
+    MISSING_FIELD(1802),
+    EXTRA_FIELD(1803),
+    INVALID_CARD(1804),
+    CARD_NOT_ACTIVE(1806),
+    CARD_NOT_CONFIGURED(1808),
+    SYSTEM_ERROR_DB(1811),
+    SYSTEM_ERROR_TXN(1812),
+    INVALID_FIELD(1830),
+    MISCONFIGURED_ENDPOINT(1831),
+    INVALID_REQUEST(1832),
+    HOST_UNREACHABLE(1833),
+
 
     // Denied Financial
     FINANCIAL_DO_NOT_HONOUR (2000),
@@ -194,24 +206,25 @@ public enum CMF implements IRC {
 
     // jPOS specific result codes
     JPOS(10000),
-    INVALID_FIELD(10001),
-    MISSING_FIELD(10002),
-    EXTRA_FIELD(10003),
-    MISCONFIGURED_ENDPOINT(10004),
-    INVALID_REQUEST(10005),
-    HOST_UNREACHABLE(10006),
     INTERNAL_ERROR(19999,false,true),
 
     // User specific result codes
     USER(90000);
 
     int irc;
+    String ircStr;
+
     boolean success;
     boolean inhibit;
-    private static Map<Integer,IRC> lookup = new HashMap<>();
+
+    private static Map<Integer,IRC> lookupInt = new HashMap<>();
+    private static Map<String,IRC>  lookupStr = new HashMap<>();
     static {
-        for (IRC irc : values())
-            lookup.put(irc.irc(), irc);
+        // This section executes after all the enum instances have been constructed
+        for (IRC irc : values()) {
+            lookupInt.put(irc.irc(), irc);
+            lookupStr.put(irc.ircString(), irc);
+        }
     }
 
     CMF(int irc) {
@@ -222,6 +235,7 @@ public enum CMF implements IRC {
     }
     CMF(int irc, boolean success, boolean inhibit) {
         this.irc = irc;
+        this.ircStr = String.format("%04d", irc);
         this.success = success;
         this.inhibit = inhibit;
     }
@@ -229,6 +243,11 @@ public enum CMF implements IRC {
     @Override
     public int irc() {
         return irc;
+    }
+
+    @Override
+    public String ircString() {
+        return ircStr;
     }
 
     @Override
@@ -242,6 +261,17 @@ public enum CMF implements IRC {
     }
 
     public static IRC valueOf(int i) {
-        return lookup.get(i);
+        return lookupInt.get(i);
+    }
+
+    /**
+     * Returns the {@code CMF} instance that has the given String as its jPOS-CMF Result Code
+     * (usually transmitted in DE-39).
+     *
+     * @param irc a String representing a jPOS-CMF Result Code
+     * @return the corresponding CMF instance or {@code null}
+     */
+    public static CMF fromIsoString(String irc) {
+        return (irc == null) ? null : (CMF)lookupStr.get(irc.trim());
     }
 }

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2018 jPOS Software SRL
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -28,7 +28,7 @@ import java.util.*;
 
 /**
  * implements <b>Composite</b>
- * whithin a <b>Composite pattern</b>
+ * within a <b>Composite pattern</b>
  *
  * @author apr@cs.com.uy
  * @version $Id$
@@ -56,7 +56,7 @@ public class ISOMsg extends ISOComponent
      * Creates an ISOMsg
      */
     public ISOMsg () {
-        fields = new TreeMap<Integer,Object>();
+        fields = new TreeMap<>();
         maxField = -1;
         dirty = true;
         maxFieldDirty=true;
@@ -66,7 +66,7 @@ public class ISOMsg extends ISOComponent
     }
     /**
      * Creates a nested ISOMsg
-     * @param fieldNumber (in the outter ISOMsg) of this nested message
+     * @param fieldNumber (in the outer ISOMsg) of this nested message
      */
     public ISOMsg (int fieldNumber) {
         this();
@@ -124,7 +124,7 @@ public class ISOMsg extends ISOComponent
     /**
      * Sets optional trailer data.
      * <p/>
-     * Note: The trailer data requires a customised channel that explicitily handles the trailer data from the ISOMsg.
+     * Note: The trailer data requires a customised channel that explicitly handles the trailer data from the ISOMsg.
      *
      * @param trailer The trailer data.
      * @see BaseChannel#getMessageTrailer(ISOMsg).
@@ -137,7 +137,7 @@ public class ISOMsg extends ISOComponent
     /**
      * Get optional trailer image.
      *
-     * @return message trailer imange (may be null)
+     * @return message trailer image (may be null)
      */
     public byte[] getTrailer() {
         return this.trailer;
@@ -254,7 +254,7 @@ public class ISOMsg extends ISOComponent
         StringTokenizer st = new StringTokenizer (fpath, ".");
         ISOMsg m = this;
         for (;;) {
-            int fldno = Integer.parseInt(st.nextToken());
+            int fldno = parseInt(st.nextToken());
             if (st.hasMoreTokens()) {
                 Object obj = m.getValue(fldno);
                 if (obj instanceof ISOMsg)
@@ -289,7 +289,7 @@ public class ISOMsg extends ISOComponent
          StringTokenizer st = new StringTokenizer (fpath, ".");
          ISOMsg m = this;
          for (;;) {
-             int fldno = Integer.parseInt(st.nextToken());
+             int fldno = parseInt(st.nextToken());
              if (st.hasMoreTokens()) {
                  Object obj = m.getValue(fldno);
                  if (obj instanceof ISOMsg)
@@ -322,7 +322,7 @@ public class ISOMsg extends ISOComponent
         StringTokenizer st = new StringTokenizer (fpath, ".");
         ISOMsg m = this;
         for (;;) {
-            int fldno = Integer.parseInt(st.nextToken());
+            int fldno = parseInt(st.nextToken());
             if (st.hasMoreTokens()) {
                 Object obj = m.getValue(fldno);
                 if (obj instanceof ISOMsg)
@@ -365,11 +365,12 @@ public class ISOMsg extends ISOComponent
         if (fields.remove (fldno) != null)
             dirty = maxFieldDirty = true;
     }
+
     /**
      * Unsets several fields at once
      * @param flds - array of fields to be unset from this ISOMsg
      */
-    public void unset (int[] flds) {
+    public void unset (int ... flds) {
         for (int fld : flds)
             unset(fld);
     }
@@ -387,7 +388,7 @@ public class ISOMsg extends ISOComponent
         int lastfldno ;
         for (;;) {
             lastfldno = fldno;
-            fldno = Integer.parseInt(st.nextToken());
+            fldno = parseInt(st.nextToken());
             if (st.hasMoreTokens()) {
                 Object obj = m.getValue(fldno);
                 if (obj instanceof ISOMsg) {
@@ -408,6 +409,16 @@ public class ISOMsg extends ISOComponent
         }
     }
 
+    /**
+     * Unset a a set of fields referenced by fpaths if any ot them exist, otherwise ignore.
+     *
+     * @param fpaths dot-separated field paths (i.e. 63.2)
+     */
+    public void unset(String ... fpaths) {
+        for (String fpath : fpaths) {
+            unset(fpath);
+        }
+    }
     /**
      * In order to interchange <b>Composites</b> and <b>Leafs</b> we use
      * getComposite(). A <b>Composite component</b> returns itself and
@@ -508,17 +519,11 @@ public class ISOMsg extends ISOComponent
         if (header instanceof Loggeable)
             ((Loggeable) header).dump (p, newIndent);
 
-        for (int i=0; i<=maxField; i++) {
-            if ((c = (ISOComponent) fields.get (i)) != null)
-                c.dump (p, newIndent);
-            //
-            // Uncomment to include bitmaps within logs
-            //
-            // if (i == 0) {
-            //  if ((c = (ISOComponent) fields.get (new Integer (-1))) != null)
-            //    c.dump (p, newIndent);
-            // }
-            //
+        for (int i : fields.keySet()) {
+            if (i >= 0) {
+                if ((c = (ISOComponent) fields.get(i)) != null)
+                    c.dump(p, newIndent);
+            }
         }
 
         p.println (indent + "</" + XMLPackager.ISOMSG_TAG+">");
@@ -555,7 +560,7 @@ public class ISOMsg extends ISOComponent
         ISOMsg m = this;
         Object obj;
         for (;;) {
-            int fldno = Integer.parseInt(st.nextToken());
+            int fldno = parseInt(st.nextToken());
             obj = m.getValue (fldno);
             if (obj==null){
                 // The user will always get a null value for an incorrect path or path not present in the message
@@ -584,14 +589,14 @@ public class ISOMsg extends ISOComponent
         ISOMsg m = this;
         ISOComponent obj;
         for (;;) {
-            int fldno = Integer.parseInt(st.nextToken());
+            int fldno = parseInt(st.nextToken());
             obj = m.getComponent(fldno);
             if (st.hasMoreTokens()) {
                 if (obj instanceof ISOMsg) {
                     m = (ISOMsg) obj;
                 }
                 else
-                    break; // 'Quick' exit if hierachy is not present.
+                    break; // 'Quick' exit if hierarchy is not present.
             } else
                 break;
         }
@@ -717,7 +722,7 @@ public class ISOMsg extends ISOComponent
          StringTokenizer st = new StringTokenizer (fpath, ".");
          ISOMsg m = this;
          for (;;) {
-             int fldno = Integer.parseInt(st.nextToken());
+             int fldno = parseInt(st.nextToken());
              if (st.hasMoreTokens()) {
                  Object obj = m.getValue(fldno);
                  if (obj instanceof ISOMsg) {
@@ -777,17 +782,49 @@ public class ISOMsg extends ISOComponent
      * @return new ISOMsg instance
      */
     @SuppressWarnings("PMD.EmptyCatchBlock")
-    public Object clone(int[] fields) {
+    public Object clone(int ... fields) {
         try {
             ISOMsg m = (ISOMsg) super.clone();
             m.fields = new TreeMap();
             for (int field : fields) {
                 if (hasField(field)) {
                     try {
-                        m.set(getComponent(field));
+                        ISOComponent c = getComponent(field);
+                        if (c instanceof ISOMsg) {
+                            m.set((ISOMsg)((ISOMsg)c).clone());
+                        } else {
+                            m.set(c);
+                        }
                     } catch (ISOException ignored) {
                         // should never happen
                     }
+                }
+            }
+            return m;
+        } catch (CloneNotSupportedException e) {
+            throw new InternalError();
+        }
+    }
+
+    /**
+     * Partially clone an ISOMsg by field paths
+     * @param fpaths string array of field paths to copy
+     * @return new ISOMsg instance
+     */
+    public ISOMsg clone(String ... fpaths) {
+        try {
+            ISOMsg m = (ISOMsg) super.clone();
+            m.fields = new TreeMap();
+            for (String fpath : fpaths) {
+                try {
+                    ISOComponent component = getComponent(fpath);
+                    if (component instanceof ISOMsg) {
+                        m.set(fpath, (ISOMsg)((ISOMsg)component).clone());
+                    } else if (component != null) {
+                        m.set(fpath, component);
+                    }
+                } catch (ISOException ignored) {
+                    //should never happen
                 }
             }
             return m;
@@ -805,13 +842,14 @@ public class ISOMsg extends ISOComponent
      */
     @SuppressWarnings("PMD.EmptyCatchBlock")
     public void merge (ISOMsg m) {
-        for (int i=0; i<=m.getMaxField(); i++)
+        for (int i : m.fields.keySet()) {
             try {
-                if (m.hasField(i))
-                    set (m.getComponent(i));
+                if (i >= 0 && m.hasField(i))
+                    set(m.getComponent(i));
             } catch (ISOException ignored) {
                 // should never happen
             }
+        }
     }
 
     /**
@@ -930,7 +968,7 @@ public class ISOMsg extends ISOComponent
         return getMTI().charAt(3) == '1';
     }
     /**
-     * sets an appropiate response MTI.
+     * sets an appropriate response MTI.
      *
      * i.e. 0100 becomes 0110<br>
      * i.e. 0201 becomes 0210<br>
@@ -961,7 +999,7 @@ public class ISOMsg extends ISOComponent
         );
     }
     /**
-     * sets an appropiate retransmission MTI<br>
+     * sets an appropriate retransmission MTI<br>
      * @exception ISOException on MTI not set or it is not a request
      */
     public void setRetransmissionMTI() throws ISOException {
@@ -1108,6 +1146,9 @@ public class ISOMsg extends ISOComponent
     private void writeExternal (ObjectOutput out, char b, ISOComponent c) throws IOException {
         out.writeByte (b);
         ((Externalizable) c).writeExternal (out);
+    }
+    private int parseInt (String s) {
+        return s.startsWith("0x") ? Integer.parseInt(s.substring(2), 16) : Integer.parseInt(s);
     }
 }
 

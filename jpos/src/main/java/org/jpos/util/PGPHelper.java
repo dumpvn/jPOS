@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2018 jPOS Software SRL
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,6 +19,7 @@
 package org.jpos.util;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -32,7 +33,10 @@ import org.bouncycastle.openpgp.operator.KeyFingerPrintCalculator;
 import org.bouncycastle.openpgp.operator.PBESecretKeyDecryptor;
 import org.bouncycastle.openpgp.operator.bc.*;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProvider;
+import org.jpos.iso.ISOUtil;
 import org.jpos.q2.Q2;
+import org.jpos.q2.install.ModuleUtils;
+import org.jpos.security.SystemSeed;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -46,7 +50,7 @@ public class PGPHelper {
             Security.addProvider(new BouncyCastleProvider());
     }
 
-    private static boolean verifySignature(InputStream in, PGPPublicKey pk) throws IOException, NoSuchProviderException, PGPException, SignatureException {
+    private static boolean verifySignature(InputStream in, PGPPublicKey pk) throws IOException, PGPException {
         boolean verify = false;
         boolean newl = false;
         int ch;
@@ -141,7 +145,7 @@ public class PGPHelper {
     }
 
     public static int checkLicense() {
-        int rc = 0x80000;
+        int rc = 0x90000;
         boolean newl = false;
         int ch;
 
@@ -190,6 +194,7 @@ public class PGPHelper {
                         String s;
                         Pattern p1 = Pattern.compile("\\s(valid through:)\\s(\\d\\d\\d\\d-\\d\\d-\\d\\d)?", Pattern.CASE_INSENSITIVE);
                         Pattern p2 = Pattern.compile("\\s(instances:)\\s([\\d]{0,4})?", Pattern.CASE_INSENSITIVE);
+                        String h = ModuleUtils.getSystemHash();
                         while ((s = reader.readLine()) != null) {
                             Matcher matcher = p1.matcher(s);
                             if (matcher.find() && matcher.groupCount() == 2) {
@@ -202,11 +207,16 @@ public class PGPHelper {
                             if (matcher.find() && matcher.groupCount() == 2) {
                                 rc |= Integer.parseInt(matcher.group(2));
                             }
+                            if (s.contains(h)) {
+                                rc &= 0xEFFFF;
+                            }
                         }
                     }
                 }
                 if (!Arrays.equals(Q2.PUBKEYHASH, mac.doFinal(pk.getEncoded())))
                     rc |= 0x20000;
+                if (ModuleUtils.getRKeys().contains(PGPHelper.getLicenseeHash()))
+                    rc |= 0x80000;
             }
         } catch (Exception ignored) {
             // NOPMD: signature isn't good
@@ -233,7 +243,9 @@ public class PGPHelper {
         }
         return baos.toString();
     }
-
+    public static String getLicenseeHash() throws IOException, NoSuchAlgorithmException {
+        return ISOUtil.hexString(hash(getLicensee()));
+    }
 
     /**
      * Simple PGP encryptor between byte[].
@@ -469,5 +481,10 @@ public class PGPHelper {
         ).build(pass);
 
         return pgpSecKey.extractPrivateKey(decryptor);
+    }
+
+    private static byte[] hash (String s) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        return md.digest(s.getBytes(StandardCharsets.UTF_8));
     }
 }
